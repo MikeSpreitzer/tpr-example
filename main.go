@@ -32,16 +32,16 @@ func main() {
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
-		glog.Fatal(err.Error())
 		panic(err)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		glog.Fatal(err.Error())
 		panic(err)
 	}
 
+	kind_created_here := false
+	
 	// initialize third party resource if it does not exist
 	tpr, err := clientset.Extensions().ThirdPartyResources().Get("example.k8s.io", metav1.GetOptions{})
 	if err != nil {
@@ -58,12 +58,11 @@ func main() {
 
 			result, err := clientset.Extensions().ThirdPartyResources().Create(tpr)
 			if err != nil {
-				glog.Fatal(err.Error())
 				panic(err)
 			}
+			kind_created_here = true
 			fmt.Printf("CREATED: %#v\nFROM: %#v\n", result, tpr)
 		} else {
-			glog.Fatal(err.Error())
 			panic(err)
 		}
 	} else {
@@ -77,7 +76,6 @@ func main() {
 
 	tprclient, err := rest.RESTClientFor(tprconfig)
 	if err != nil {
-		glog.Fatal(err.Error())
 		panic(err)
 	}
 
@@ -103,20 +101,22 @@ func main() {
 			}
 
 			var result Example
-			err = tprclient.Post().
+			req := tprclient.Post().
 				Resource("examples").
 				Namespace(api.NamespaceDefault).
-				Body(example).
+				Body(example)
+			err = req.
 				Do().Into(&result)
 
 			if err != nil {
-				glog.Fatal(err.Error())
-				glog.Fatal(err)
+				if (kind_created_here) {
+					glog.Infoln("Probably because of delay issue noted in https://github.com/kubernetes/features/issues/95 ...")
+				}
+				glog.Fatalf("Unable to create example1 --- request=%#v, result=%#v, err=%#v", req, result, err)
 				panic(err)
 			}
 			fmt.Printf("CREATED: %#v\n", result)
 		} else {
-			glog.Fatal(err.Error())
 			panic(err)
 		}
 	} else {
@@ -127,7 +127,6 @@ func main() {
 	exampleList := ExampleList{}
 	err = tprclient.Get().Resource("examples").Do().Into(&exampleList)
 	if err != nil {
-		glog.Fatal(err.Error())
 		panic(err)
 	}
 	fmt.Printf("LIST: %#v\n", exampleList)
