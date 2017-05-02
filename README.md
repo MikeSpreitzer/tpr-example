@@ -15,10 +15,13 @@ Following is a summary of the changes.
 * Mostly changing import statements, but also a few bits of actual
   code had to change which imported package they refer to.
 
-* I also added logging before each panic, I was getting no info on panics.
+* I introduced an import and use of `glog`.
+
+* Added an explanation, and printing of request and response details,
+  in the common case of panics --- which is the known (see client-go
+  issue #95) delay between defining a new Kind of object and being
+  able to use that Kind.
 
 * I also extended the function that pretty-prints an `Example` value.
 
 * I also slowed down the resync frequency in the informer.
-
-* I introduced an import and use of `glog`.
